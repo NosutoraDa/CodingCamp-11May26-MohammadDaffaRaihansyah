@@ -1,9 +1,6 @@
 /* ============================================================
    Budget Visualizer — app.js
-   Vanilla JS only. No frameworks. LocalStorage for persistence.
-   Features: transactions, donut chart, monthly summary,
-             sort/filter, dark/light mode, USD/IDR currency,
-             custom categories, spend limit.
+   Vanilla JS, no frameworks. LocalStorage persistence.
    ============================================================ */
 
 'use strict';
@@ -23,19 +20,17 @@ const CURRENCIES = {
   IDR: { code: 'IDR', locale: 'id-ID', symbol: 'Rp', decimals: 0 },
 };
 
-/* Live exchange rate: USD → IDR, fetched from open.er-api.com
-   Cached in localStorage for 1 hour to avoid hammering the API.
-   Falls back to a hardcoded rate if the fetch fails.            */
-const RATE_FALLBACK   = 16300;   // approximate USD→IDR fallback
+// Exchange rate: fetched from open.er-api.com, cached 1 hour, fallback to 16300
+const RATE_FALLBACK   = 16300;
 const RATE_CACHE_KEY  = 'bv_usd_idr_rate';
 const RATE_CACHE_TIME = 'bv_usd_idr_time';
-const RATE_TTL_MS     = 60 * 60 * 1000; // 1 hour
+const RATE_TTL_MS     = 60 * 60 * 1000;
 
 let usdToIdr = parseFloat(localStorage.getItem(RATE_CACHE_KEY)) || RATE_FALLBACK;
 
 async function fetchExchangeRate() {
   const lastFetch = parseInt(localStorage.getItem(RATE_CACHE_TIME) || '0', 10);
-  if (Date.now() - lastFetch < RATE_TTL_MS && usdToIdr !== RATE_FALLBACK) return; // still fresh
+  if (Date.now() - lastFetch < RATE_TTL_MS && usdToIdr !== RATE_FALLBACK) return;
 
   try {
     const res  = await fetch('https://open.er-api.com/v6/latest/USD');
@@ -44,10 +39,10 @@ async function fetchExchangeRate() {
       usdToIdr = data.rates.IDR;
       localStorage.setItem(RATE_CACHE_KEY,  usdToIdr);
       localStorage.setItem(RATE_CACHE_TIME, Date.now());
-      render(); // re-render with fresh rate
+      render();
     }
   } catch {
-    // Network unavailable — keep using cached or fallback rate silently
+    // Keep cached or fallback rate silently
   }
 }
 
@@ -63,7 +58,6 @@ const DEFAULT_CATEGORIES = [
   { name: 'Other',         emoji: '📦', color: '#8b8fa8' },
 ];
 
-/* Extra colors for user-created categories */
 const EXTRA_COLORS = [
   '#e040fb', '#00bcd4', '#ff7043', '#66bb6a',
   '#ab47bc', '#26c6da', '#d4e157', '#ef5350',
@@ -71,9 +65,9 @@ const EXTRA_COLORS = [
 
 /* ── App state ────────────────────────────────────────────── */
 let transactions = JSON.parse(localStorage.getItem(KEYS.transactions) || '[]');
-let categories   = JSON.parse(localStorage.getItem(KEYS.categories)   || 'null') || DEFAULT_CATEGORIES.map(c => ({ ...c }));
-let spendLimit   = parseFloat(localStorage.getItem(KEYS.spendLimit))  || 0;
-let currency     = CURRENCIES[localStorage.getItem(KEYS.currency)]    || CURRENCIES.USD;
+let categories   = JSON.parse(localStorage.getItem(KEYS.categories) || 'null') || DEFAULT_CATEGORIES.map(c => ({ ...c }));
+let spendLimit   = parseFloat(localStorage.getItem(KEYS.spendLimit)) || 0;
+let currency     = CURRENCIES[localStorage.getItem(KEYS.currency)]   || CURRENCIES.USD;
 
 let currentType   = 'expense';
 let currentFilter = 'all';
@@ -89,27 +83,31 @@ function save() {
   localStorage.setItem(KEYS.currency,     currency.code);
 }
 
-/* ── Utility helpers ──────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────────── */
 
-/** Format a number as currency string.
- *  Transactions are stored in the currency they were entered in.
- *  When switching currency, amounts are converted using the live rate. */
+/** Convert a transaction's amount to the current display currency */
+function toDisplay(t) {
+  let v = t.amount;
+  const stored = t.currency || 'USD';
+  if (stored !== currency.code) {
+    v = stored === 'USD' ? v * usdToIdr : v / usdToIdr;
+  }
+  return v;
+}
+
+/** Format a number as a currency string, converting if needed */
 function fmt(n, storedCode) {
   let value = Math.abs(n);
-
-  // Convert if stored currency differs from display currency
   if (storedCode && storedCode !== currency.code) {
-    if (storedCode === 'USD' && currency.code === 'IDR') value = value * usdToIdr;
-    if (storedCode === 'IDR' && currency.code === 'USD') value = value / usdToIdr;
+    value = storedCode === 'USD' ? value * usdToIdr : value / usdToIdr;
   }
-
   return currency.symbol + value.toLocaleString(currency.locale, {
     minimumFractionDigits: currency.decimals,
     maximumFractionDigits: currency.decimals,
   });
 }
 
-/** Escape HTML special characters to prevent XSS */
+/** Escape HTML to prevent XSS */
 function escHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -118,12 +116,12 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-/** Find a category object by name, with fallback */
+/** Find a category by name, with a safe fallback */
 function getCat(name) {
   return categories.find(c => c.name === name) || { name, emoji: '📦', color: '#8b8fa8' };
 }
 
-/** Return "YYYY-MM" for a date string */
+/** Return "YYYY-MM" string for a date string */
 function toMonthKey(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -139,7 +137,7 @@ function summaryMonthLabel() {
   return summaryMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-/** Highlight an input with a red border briefly */
+/** Flash a red border on an input briefly */
 function shake(id) {
   const el = document.getElementById(id);
   el.style.borderColor = '#ff6584';
@@ -149,14 +147,13 @@ function shake(id) {
 /* ── Theme ────────────────────────────────────────────────── */
 function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
-  document.getElementById('themeToggle').textContent = theme === 'light' ? '🌙 Dark' : '☀️ Light';
+  document.getElementById('themeToggle').textContent = theme === 'light' ? '🌙' : '☀️';
   localStorage.setItem(KEYS.theme, theme);
 }
 
 function toggleTheme() {
-  const isLight = document.body.classList.contains('light');
-  applyTheme(isLight ? 'dark' : 'light');
-  renderChart(); // canvas colors depend on CSS vars
+  applyTheme(document.body.classList.contains('light') ? 'dark' : 'light');
+  renderChart();
 }
 
 /* ── Currency ─────────────────────────────────────────────── */
@@ -167,7 +164,7 @@ function setCurrency(code) {
   document.getElementById('curUSD').classList.toggle('active', code === 'USD');
   document.getElementById('curIDR').classList.toggle('active', code === 'IDR');
 
-  const amtInput = document.getElementById('txAmount');
+  const amtInput       = document.getElementById('txAmount');
   amtInput.step        = currency.decimals === 0 ? '1' : '0.01';
   amtInput.placeholder = currency.decimals === 0 ? '0' : '0.00';
 
@@ -186,11 +183,7 @@ function addCustomCategory() {
   const name  = input.value.trim();
 
   if (!name) { input.focus(); return; }
-
-  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-    shake('newCatName');
-    return;
-  }
+  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) { shake('newCatName'); return; }
 
   const colorIndex = (categories.length - DEFAULT_CATEGORIES.length) % EXTRA_COLORS.length;
   categories.push({ name, emoji: '🏷️', color: EXTRA_COLORS[colorIndex] });
@@ -236,7 +229,7 @@ function getSorted(list) {
     case 'amount-desc': return copy.sort((a, b) => b.amount - a.amount);
     case 'amount-asc':  return copy.sort((a, b) => a.amount - b.amount);
     case 'category':    return copy.sort((a, b) => a.cat.localeCompare(b.cat));
-    default:            return copy.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id); // date-desc
+    default:            return copy.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
   }
 }
 
@@ -247,16 +240,16 @@ function addTransaction() {
   const cat    = document.getElementById('txCat').value;
   const date   = document.getElementById('txDate').value;
 
-  if (!name)           { shake('txName');   return; }
+  if (!name)                  { shake('txName');   return; }
   if (!amount || amount <= 0) { shake('txAmount'); return; }
-  if (!date)           { shake('txDate');   return; }
+  if (!date)                  { shake('txDate');   return; }
 
   transactions.unshift({ id: Date.now(), name, amount, cat, date, type: currentType, currency: currency.code });
   save();
   render();
 
-  document.getElementById('txName').value   = '';
-  document.getElementById('txAmount').value = '';
+  document.getElementById('txName').value       = '';
+  document.getElementById('txAmount').value     = '';
   document.getElementById('txDate').valueAsDate = new Date();
 }
 
@@ -276,15 +269,6 @@ function updateSpendLimit() {
 
 /* ── Render: balance card ─────────────────────────────────── */
 function renderBalance() {
-  const toDisplay = (t) => {
-    let v = t.amount;
-    const stored = t.currency || 'USD';
-    if (stored !== currency.code) {
-      v = stored === 'USD' ? v * usdToIdr : v / usdToIdr;
-    }
-    return v;
-  };
-
   const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + toDisplay(t), 0);
   const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + toDisplay(t), 0);
   const balance = income - expense;
@@ -299,23 +283,15 @@ function renderBalance() {
 
 /* ── Render: spend limit bar ──────────────────────────────── */
 function renderLimitBar() {
-  const wrap  = document.getElementById('limitBarWrap');
-  const bar   = document.getElementById('limitBar');
-  const info  = document.getElementById('limitInfo');
+  const wrap = document.getElementById('limitBarWrap');
+  const bar  = document.getElementById('limitBar');
+  const info = document.getElementById('limitInfo');
 
-  // Keep input in sync with saved value
   if (spendLimit > 0) document.getElementById('spendLimitInput').value = spendLimit;
 
   const totalExpense = transactions
     .filter(t => t.type === 'expense')
-    .reduce((s, t) => {
-      let v = t.amount;
-      const stored = t.currency || 'USD';
-      if (stored !== currency.code) {
-        v = stored === 'USD' ? v * usdToIdr : v / usdToIdr;
-      }
-      return s + v;
-    }, 0);
+    .reduce((s, t) => s + toDisplay(t), 0);
 
   if (spendLimit <= 0) {
     wrap.style.display = 'none';
@@ -341,18 +317,18 @@ function renderList() {
   );
 
   if (!sorted.length) {
-    list.innerHTML = `<div class="empty-state"><span class="emoji">🪙</span>No transactions yet.</div>`;
+    list.innerHTML = '<div class="empty-state"><span class="emoji">🪙</span>No transactions yet.</div>';
     return;
   }
 
   list.innerHTML = sorted.map(t => {
-    const cat      = getCat(t.cat);
-    const sign     = t.type === 'income' ? '+' : '−';
-    const dateStr  = t.date
+    const cat       = getCat(t.cat);
+    const sign      = t.type === 'income' ? '+' : '−';
+    const dateStr   = t.date
       ? new Date(t.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : '';
     const overLimit = spendLimit > 0 && t.type === 'expense' && t.amount > spendLimit * 0.5;
-    const badge     = overLimit ? `<span class="limit-badge">⚠ high</span>` : '';
+    const badge     = overLimit ? '<span class="limit-badge">⚠ high</span>' : '';
 
     return `
       <div class="tx-item${overLimit ? ' over-limit' : ''}">
@@ -362,12 +338,12 @@ function renderList() {
           <div class="tx-meta">${escHtml(t.cat)} · ${dateStr}</div>
         </div>
         <div class="tx-amount ${t.type}">${sign}${fmt(t.amount, t.currency || 'USD')}</div>
-        <button class="tx-del" onclick="deleteTransaction(${t.id})" aria-label="Delete transaction">✕</button>
+        <button class="tx-del" data-id="${t.id}" aria-label="Delete transaction">✕</button>
       </div>`;
   }).join('');
 }
 
-/* ── Render: donut chart (pure Canvas) ───────────────────── */
+/* ── Render: donut chart ──────────────────────────────────── */
 function renderChart() {
   const area     = document.getElementById('chartArea');
   const expenses = transactions.filter(t => t.type === 'expense');
@@ -377,15 +353,10 @@ function renderChart() {
     return;
   }
 
-  // Aggregate by category (convert to display currency)
+  // Aggregate by category
   const totals = {};
   expenses.forEach(t => {
-    let v = t.amount;
-    const stored = t.currency || 'USD';
-    if (stored !== currency.code) {
-      v = stored === 'USD' ? v * usdToIdr : v / usdToIdr;
-    }
-    totals[t.cat] = (totals[t.cat] || 0) + v;
+    totals[t.cat] = (totals[t.cat] || 0) + toDisplay(t);
   });
   const total   = Object.values(totals).reduce((a, b) => a + b, 0);
   const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
@@ -396,7 +367,6 @@ function renderChart() {
       <div class="legend" id="chartLegend"></div>
     </div>`;
 
-  // Legend
   document.getElementById('chartLegend').innerHTML = entries.map(([name, val]) => {
     const cat = getCat(name);
     return `
@@ -407,7 +377,7 @@ function renderChart() {
       </div>`;
   }).join('');
 
-  // Draw donut on canvas
+  // Draw donut
   const canvas = document.getElementById('donutCanvas');
   const ctx    = canvas.getContext('2d');
   const cx = 70, cy = 70, outerR = 62, innerR = 38;
@@ -427,13 +397,13 @@ function renderChart() {
     angle += slice;
   });
 
-  // Punch the center hole (reads CSS var for correct theme color)
+  // Center hole — reads CSS var to match current theme
   ctx.beginPath();
   ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#1a1d27';
   ctx.fill();
 
-  // Center total label
+  // Center label
   ctx.fillStyle    = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e8eaf6';
   ctx.font         = 'bold 12px Segoe UI, system-ui, sans-serif';
   ctx.textAlign    = 'center';
@@ -444,15 +414,6 @@ function renderChart() {
 /* ── Render: monthly summary ──────────────────────────────── */
 function renderSummary() {
   const key     = summaryMonthKey();
-  const toDisplay = (t) => {
-    let v = t.amount;
-    const stored = t.currency || 'USD';
-    if (stored !== currency.code) {
-      v = stored === 'USD' ? v * usdToIdr : v / usdToIdr;
-    }
-    return v;
-  };
-
   const monthTx = transactions.filter(t => t.date && toMonthKey(t.date) === key);
   const income  = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + toDisplay(t), 0);
   const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + toDisplay(t), 0);
@@ -466,7 +427,7 @@ function renderSummary() {
   balEl.textContent = (balance < 0 ? '-' : '') + fmt(balance);
   balEl.style.color = balance < 0 ? 'var(--red)' : 'var(--green)';
 
-  // Category bar chart (expenses only, converted to display currency)
+  // Category bar chart
   const catTotals = {};
   monthTx.filter(t => t.type === 'expense').forEach(t => {
     catTotals[t.cat] = (catTotals[t.cat] || 0) + toDisplay(t);
@@ -513,36 +474,61 @@ function render() {
   if (activeTab === 'summary') renderSummary();
 }
 
-/* ── Initialise ───────────────────────────────────────────── */
+/* ── Init ─────────────────────────────────────────────────── */
 (function init() {
-  // Restore theme
+  // Theme
   applyTheme(localStorage.getItem(KEYS.theme) || 'dark');
 
-  // Default date to today
+  // Form defaults
   document.getElementById('txDate').valueAsDate = new Date();
-
-  // Build category dropdown
   rebuildCategorySelect();
 
-  // Sync currency pill buttons
+  // Currency pill sync
   document.getElementById('curUSD').classList.toggle('active', currency.code === 'USD');
   document.getElementById('curIDR').classList.toggle('active', currency.code === 'IDR');
 
-  // Set amount input step/placeholder for saved currency
+  // Amount input step/placeholder
   const amtInput       = document.getElementById('txAmount');
   amtInput.step        = currency.decimals === 0 ? '1' : '0.01';
   amtInput.placeholder = currency.decimals === 0 ? '0' : '0.00';
 
-  // Wire sort dropdown
-  document.getElementById('sortSelect').addEventListener('change', function () {
-    setSort(this.value);
-  });
+  // ── Wire all event listeners (no inline handlers in HTML) ──
 
-  // Wire spend limit input
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+  document.getElementById('curUSD').addEventListener('click', () => setCurrency('USD'));
+  document.getElementById('curIDR').addEventListener('click', () => setCurrency('IDR'));
+
+  document.getElementById('btnExpense').addEventListener('click', () => setType('expense'));
+  document.getElementById('btnIncome').addEventListener('click',  () => setType('income'));
+
+  // Keyboard support for type toggle (Enter / Space)
+  document.getElementById('btnExpense').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') setType('expense'); });
+  document.getElementById('btnIncome').addEventListener('keydown',  e => { if (e.key === 'Enter' || e.key === ' ') setType('income'); });
+
+  document.getElementById('addTxBtn').addEventListener('click', addTransaction);
+  document.getElementById('addCatBtn').addEventListener('click', addCustomCategory);
+
+  document.getElementById('tabHistory').addEventListener('click', () => setTab('history'));
+  document.getElementById('tabSummary').addEventListener('click', () => setTab('summary'));
+
+  document.getElementById('prevMonthBtn').addEventListener('click', prevMonth);
+  document.getElementById('nextMonthBtn').addEventListener('click', nextMonth);
+
+  document.getElementById('sortSelect').addEventListener('change', function () { setSort(this.value); });
   document.getElementById('spendLimitInput').addEventListener('change', updateSpendLimit);
 
-  render();
+  // Filter buttons (delegated via data-filter attribute)
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function () { setFilter(this.dataset.filter, this); });
+  });
 
-  // Fetch live USD→IDR rate (cached 1 hour, falls back silently)
+  // Delete transaction (event delegation on the list — handles dynamically rendered items)
+  document.getElementById('txList').addEventListener('click', function (e) {
+    const btn = e.target.closest('.tx-del');
+    if (btn) deleteTransaction(Number(btn.dataset.id));
+  });
+
+  render();
   fetchExchangeRate();
 })();

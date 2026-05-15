@@ -1,7 +1,6 @@
 /* ============================================================
    Budget Visualizer — style.css
-   Mobile-first. Responsive up to desktop.
-   Dark/light theme via CSS custom properties.
+   Mobile-first. Dark/light theme via CSS custom properties.
    ============================================================ */
 
 /* ── Reset ────────────────────────────────────────────────── */
@@ -51,54 +50,77 @@ body {
 /* ── Header ───────────────────────────────────────────────── */
 header {
   background: var(--header-grad);
-  padding: 16px 20px 40px;
-  text-align: center;
+  padding: 10px 16px;
   position: relative;
 }
 
-header h1 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #fff;
+.header-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-header p {
-  font-size: 0.75rem;
-  opacity: 0.85;
-  margin-top: 3px;
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #fff;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.header-sub {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.2px;
+  line-height: 1.2;
 }
 
 #themeToggle {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  background: rgba(255, 255, 255, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
+  justify-content: center;
+  flex-shrink: 0;
   transition: background 0.2s, border-color 0.2s;
 }
 
 #themeToggle:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.35);
   border-color: #fff;
 }
 
 /* ── Layout ───────────────────────────────────────────────── */
 .container {
   max-width: 640px;
-  margin: -32px auto 0;
+  margin: 12px auto 0;
   padding: 0 16px;
 }
 
@@ -127,13 +149,21 @@ header p {
   padding: 24px;
 }
 
+.balance-card .label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
 .balance-card .amount {
-  font-size: 2.8rem;
+  font-size: 2.6rem;
   font-weight: 800;
-  margin: 0 0 20px;
+  margin: 6px 0 20px;
   letter-spacing: -1px;
   transition: color 0.3s;
-  filter: drop-shadow(0 0 12px currentColor);
 }
 
 .balance-card .amount.positive { color: var(--green); }
@@ -219,7 +249,7 @@ header p {
 
 .legend {
   flex: 1;
-  min-width: 120px;
+  min-width: 0;
 }
 
 .legend-item {
@@ -277,7 +307,7 @@ select:focus { border-color: var(--accent); }
 
 select option { background: var(--surface2); color: var(--text); }
 
-/* Type toggle */
+/* ── Type toggle ──────────────────────────────────────────── */
 .type-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -300,7 +330,7 @@ select option { background: var(--surface2); color: var(--text); }
 .type-btn.active-income  { border-color: var(--green); color: var(--green); background: rgba(67, 233, 123, 0.08); }
 .type-btn.active-expense { border-color: var(--red);   color: var(--red);   background: rgba(255, 101, 132, 0.08); }
 
-/* Amount + currency */
+/* ── Amount + currency ────────────────────────────────────── */
 .amount-col,
 .cat-col {
   display: flex;
@@ -325,6 +355,7 @@ select option { background: var(--surface2); color: var(--text); }
   background: var(--surface2);
   border-radius: 8px;
   padding: 3px;
+  width: -webkit-fit-content;
   width: fit-content;
 }
 
@@ -348,7 +379,7 @@ select option { background: var(--surface2); color: var(--text); }
   box-shadow: 0 1px 6px rgba(108, 99, 255, 0.4);
 }
 
-/* Custom category */
+/* ── Custom category ──────────────────────────────────────── */
 .custom-cat-row {
   display: flex;
   gap: 8px;
@@ -372,7 +403,7 @@ select option { background: var(--surface2); color: var(--text); }
 
 .custom-cat-row button:hover { opacity: 0.85; }
 
-/* Add button */
+/* ── Add button ───────────────────────────────────────────── */
 .add-btn {
   width: 100%;
   padding: 14px;
@@ -453,7 +484,6 @@ select option { background: var(--surface2); color: var(--text); }
   cursor: pointer;
   outline: none;
   width: auto;
-  /* On mobile, sort select goes to its own row */
   flex-shrink: 0;
 }
 
@@ -640,23 +670,12 @@ select option { background: var(--surface2); color: var(--text); }
 
 /* ── Responsive: desktop ──────────────────────────────────── */
 @media (min-width: 640px) {
-  .container {
-    padding: 0 24px;
-  }
+  header { padding: 12px 24px; }
 
-  header {
-    padding: 20px 24px 48px;
-  }
-
-  header h1 { font-size: 1.3rem; }
+  .container { padding: 0 24px; }
 
   .balance-card .amount { font-size: 2.8rem; }
 
-  .controls-row {
-    flex-wrap: nowrap;
-  }
-
-  .sort-select {
-    margin-left: auto;
-  }
+  .controls-row { flex-wrap: nowrap; }
+  .sort-select  { margin-left: auto; }
 }

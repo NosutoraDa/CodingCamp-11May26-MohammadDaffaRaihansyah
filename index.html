@@ -8,17 +8,25 @@
 </head>
 <body>
 
-<!-- Header -->
+<!-- ── Header ─────────────────────────────────────────────── -->
 <header>
-  <h1>💰 Budget Visualizer</h1>
-  <p>Track spending. Stay on budget.</p>
-  <button id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark/light mode">☀️ Light</button>
+  <div class="header-inner">
+    <div class="header-brand">
+      <span class="header-icon">💰</span>
+      <div class="header-text">
+        <span class="header-title">Budget Visualizer</span>
+        <span class="header-sub">Track spending · Stay on budget</span>
+      </div>
+    </div>
+    <button id="themeToggle" aria-label="Toggle dark/light mode">☀️</button>
+  </div>
 </header>
 
 <div class="container">
 
-  <!-- Balance -->
+  <!-- Balance Card -->
   <div class="card balance-card">
+    <div class="label">Total Balance</div>
     <div class="amount positive" id="balanceAmt">$0.00</div>
     <div class="stats">
       <div class="stat income">
@@ -36,11 +44,11 @@
   <div class="card">
     <div class="card-title">Monthly Spend Limit</div>
     <div class="limit-row">
-      <label for="spendLimitInput" id="limitLabel">Limit</label>
+      <label for="spendLimitInput">Limit</label>
       <input id="spendLimitInput" type="number" placeholder="e.g. 500" min="0" step="1" />
     </div>
     <div class="limit-bar-wrap" id="limitBarWrap" style="display:none">
-      <div class="limit-bar" id="limitBar" style="width:0%"></div>
+      <div class="limit-bar" id="limitBar"></div>
     </div>
     <div class="limit-info" id="limitInfo"></div>
   </div>
@@ -61,8 +69,8 @@
       <div class="full">
         <label>Type</label>
         <div class="type-toggle">
-          <div class="type-btn active-expense" id="btnExpense" onclick="setType('expense')" role="button" tabindex="0">− Expense</div>
-          <div class="type-btn" id="btnIncome" onclick="setType('income')" role="button" tabindex="0">+ Income</div>
+          <div class="type-btn active-expense" id="btnExpense" role="button" tabindex="0">− Expense</div>
+          <div class="type-btn" id="btnIncome" role="button" tabindex="0">+ Income</div>
         </div>
       </div>
 
@@ -71,19 +79,17 @@
         <input id="txName" type="text" placeholder="e.g. Coffee, Salary…" maxlength="40" />
       </div>
 
-      <!-- Amount + currency toggle -->
       <div class="amount-col">
         <label for="txAmount">Amount</label>
         <div class="amount-row">
           <div class="currency-toggle">
-            <button class="cur-btn active" id="curUSD" onclick="setCurrency('USD')">USD</button>
-            <button class="cur-btn"        id="curIDR" onclick="setCurrency('IDR')">IDR</button>
+            <button class="cur-btn active" id="curUSD">USD</button>
+            <button class="cur-btn" id="curIDR">IDR</button>
           </div>
           <input id="txAmount" type="number" placeholder="0.00" min="0.01" step="0.01" />
         </div>
       </div>
 
-      <!-- Category -->
       <div class="cat-col">
         <label for="txCat">Category</label>
         <select id="txCat"></select>
@@ -94,32 +100,31 @@
         <input id="txDate" type="date" />
       </div>
 
-      <!-- Custom category -->
       <div class="full">
         <label for="newCatName">Add Custom Category</label>
         <div class="custom-cat-row">
           <input id="newCatName" type="text" placeholder="e.g. Gym, Pets…" maxlength="24" />
-          <button onclick="addCustomCategory()">+ Add</button>
+          <button id="addCatBtn">+ Add</button>
         </div>
       </div>
 
     </div>
-    <button class="add-btn" onclick="addTransaction()">Add Transaction</button>
+    <button class="add-btn" id="addTxBtn">Add Transaction</button>
   </div>
 
   <!-- History / Summary -->
   <div class="card">
     <div class="tab-nav">
-      <button class="tab-btn active" id="tabHistory" onclick="setTab('history')">Transaction History</button>
-      <button class="tab-btn"        id="tabSummary" onclick="setTab('summary')">Monthly Summary</button>
+      <button class="tab-btn active" id="tabHistory">Transaction History</button>
+      <button class="tab-btn" id="tabSummary">Monthly Summary</button>
     </div>
 
     <!-- History panel -->
     <div id="panelHistory">
       <div class="controls-row">
-        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
-        <button class="filter-btn" onclick="setFilter('expense', this)">Expenses</button>
-        <button class="filter-btn" onclick="setFilter('income', this)">Income</button>
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="expense">Expenses</button>
+        <button class="filter-btn" data-filter="income">Income</button>
         <select class="sort-select" id="sortSelect" aria-label="Sort transactions">
           <option value="date-desc">Newest first</option>
           <option value="date-asc">Oldest first</option>
@@ -134,9 +139,9 @@
     <!-- Summary panel -->
     <div id="panelSummary" style="display:none">
       <div class="month-nav">
-        <button onclick="prevMonth()" aria-label="Previous month">&#8249;</button>
+        <button id="prevMonthBtn" aria-label="Previous month">&#8249;</button>
         <span id="summaryMonthLabel"></span>
-        <button onclick="nextMonth()" aria-label="Next month">&#8250;</button>
+        <button id="nextMonthBtn" aria-label="Next month">&#8250;</button>
       </div>
       <div class="month-stats">
         <div class="month-stat ms-income">
