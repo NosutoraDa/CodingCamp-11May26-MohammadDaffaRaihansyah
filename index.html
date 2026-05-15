@@ -24,8 +24,9 @@
 
 <div class="container">
 
-  <!-- Balance Card -->
-  <div class="card balance-card">
+  <!-- Balance Card — full width -->
+  <div class="desktop-grid">
+  <div class="card balance-card col-full">
     <div class="label">Total Balance</div>
     <div class="amount positive" id="balanceAmt">$0.00</div>
     <div class="stats">
@@ -38,7 +39,11 @@
         <div class="stat-val" id="totalExpense">$0.00</div>
       </div>
     </div>
-  </div>
+    </div>
+  </div><!-- /balance-card -->
+
+  <!-- Left column: Spend Limit, Chart, Add Transaction -->
+  <div class="desktop-col-left">
 
   <!-- Spend Limit -->
   <div class="card">

@@ -50,12 +50,12 @@ body {
 /* ── Header ───────────────────────────────────────────────── */
 header {
   background: var(--header-grad);
-  padding: 10px 16px;
+  padding: 10px 24px;
   position: relative;
 }
 
 .header-inner {
-  max-width: 640px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -119,8 +119,8 @@ header {
 
 /* ── Layout ───────────────────────────────────────────────── */
 .container {
-  max-width: 640px;
-  margin: 12px auto 0;
+  max-width: 1200px;
+  margin: 16px auto 0;
   padding: 0 16px;
 }
 
@@ -669,13 +669,27 @@ select option { background: var(--surface2); color: var(--text); }
 }
 
 /* ── Responsive: desktop ──────────────────────────────────── */
-@media (min-width: 640px) {
-  header { padding: 12px 24px; }
+@media (min-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
 
-  .container { padding: 0 24px; }
+  /* Two-column grid: left column for stats/chart/form, right for history */
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+    align-items: start;
+  }
 
-  .balance-card .amount { font-size: 2.8rem; }
+  /* Balance card spans full width */
+  .col-full { grid-column: 1 / -1; }
+
+  .balance-card .amount { font-size: 3rem; }
+  .balance-card .label  { font-size: 0.9rem; }
 
   .controls-row { flex-wrap: nowrap; }
   .sort-select  { margin-left: auto; }
+
+  .card-title   { font-size: 0.85rem; }
 }
